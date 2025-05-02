@@ -13,3 +13,12 @@ Then Kill
 ```
 kill -9 54663
 ```
+
+# Guidance to build Dockerfile & Run
+```
+docker build -t infinite-sleep-server .
+```
+
+```
+docker run -p 8080:8080 infinite-sleep-server
+```
