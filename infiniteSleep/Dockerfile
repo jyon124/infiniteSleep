@@ -1,30 +1,31 @@
-# Use official Go base image
-FROM golang:1.21-alpine as builder
+# --- Build Stage ---
+FROM golang:1.24.2 AS builder
 
-# Set working directory inside container
 WORKDIR /app
 
-# Copy go.mod and go.sum first for better layer caching
+# Copy go.mod first
 COPY go.mod ./
+
+# Ensure go.sum exists by running go mod tidy
+RUN go mod tidy
+
+# Uncomment only if main.go have third-party dependencies module. If project relies on only standard library, this line is not required.
+# COPY go.sum ./
+
+# Download dependencies
 RUN go mod download
 
-# Copy the rest of the source code
+# Copy the source code
 COPY . .
 
-# Build the Go app statically
-RUN go build -o server .
+# Build statically (safe for small base images if needed)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o server .
 
-# Use a minimal base image for production
-FROM alpine:latest
+# --- Runtime Stage ---
+FROM golang:1.24.2 AS runner
 
-# Set working directory
 WORKDIR /root/
-
-# Copy the built binary from the builder stage
 COPY --from=builder /app/server .
 
-# Expose port
 EXPOSE 8080
-
-# Run the binary
 CMD ["./server"]
